@@ -1,9 +1,9 @@
 
 from modeltranslation.translator import TranslationOptions, register
-from .models import  Member_Profile, Team, Project, ClientRequest
+from .models import  MemberProfile, Team, Project, ClientRequest
 
 
-@register(Member_Profile)
+@register(MemberProfile)
 class MemberProfileTranslationOptions(TranslationOptions):
     fields = ( 'bio',)
 

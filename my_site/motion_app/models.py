@@ -1,5 +1,5 @@
 from django.db import models
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from phonenumber_field.modelfields import PhoneNumberField
 
 
@@ -15,24 +15,40 @@ RoleChoices = (
 )
 
 
-class UserProfile(AbstractUser):
-    email = models.EmailField(unique=True)
-    phone_number = PhoneNumberField(null=True, blank=True)
-    position = models.CharField(max_length=100, blank=True)
-    bio = models.TextField(blank=True)
-    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
-    cv_file = models.FileField(upload_to='cv/', blank=True, null=True)
-    user_role = models.CharField(max_length=20, choices=RoleChoices, default='Developer')
+class UserProfileManager(BaseUserManager):
+    def create_user(self, login, password=None, **extra_fields):
+        if not login:
+            raise ValueError("Логин обязателен")
+        user = self.model(login=login, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']
+    def create_superuser(self, login, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
+        return self.create_user(login, password, **extra_fields)
+
+
+class UserProfile(AbstractUser):
+    username = None
+    login = models.CharField("Логин для входа", max_length=150, unique=True)
+    role = models.CharField("Роль", max_length=20, choices=RoleChoices, default="Developer")
+    status = models.CharField("Статус", max_length=20, choices=Status_Choices, default="Active")
+    created_at = models.DateTimeField("Дата регистрации", auto_now_add=True, null=True, blank=True)
+
+    USERNAME_FIELD = "login"
+    REQUIRED_FIELDS = []
+
+    objects = UserProfileManager()
 
     def __str__(self):
-        return self.email
+        return self.login
 
 
-class Member_Profile(models.Model):
-    member_users = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='member_profile')
+class MemberProfile(models.Model):
+    member_users = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name='member_profile')
     firstName = models.CharField(max_length=150)
     lastName = models.CharField(max_length=150)
     members_avatar = models.ImageField('Аватар Участника', upload_to='members_image/', blank=True, null=True)
@@ -123,8 +139,6 @@ class ClientRequest(models.Model):
     Client_Status = (
         ('New', 'New'),
         ('Reviewing', 'Reviewing'),
-        ('Rejected', 'Rejected'),
-        ('Approved', 'Approved'),
     )
     status = models.CharField(max_length=150, choices=Client_Status, default='New')
     created_at = models.DateTimeField(auto_now_add=True)

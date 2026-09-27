@@ -33,9 +33,9 @@ INSTALLED_APPS = [
     'rest_framework',
     "phonenumber_field",
     "drf_yasg",
-    'rest_framework_swagger',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
+    "django_filters",
 ]
 
 MIDDLEWARE = [
@@ -141,7 +141,10 @@ MAILERS = {
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
+    ),
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+    ],
 }
 
 AUTH_USER_MODEL = 'motion_app.UserProfile'

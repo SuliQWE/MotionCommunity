@@ -1,10 +1,10 @@
 from django.contrib import admin
-from .models import UserProfile, Member_Profile, Team, TeamMember, ProjectMember, Project, ClientRequest
+from .models import UserProfile, MemberProfile, Team, TeamMember, ProjectMember, Project, ClientRequest
 from modeltranslation.admin import TranslationAdmin
 
 
-@admin.register(Member_Profile)
-class Member_ProfileAdmin(TranslationAdmin):
+@admin.register(MemberProfile)
+class MemberProfileAdmin(TranslationAdmin):
 
     class Media:
         js = (

@@ -9,14 +9,15 @@ from rest_framework import permissions
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="Motion Community",
-        default_version='v1',),
+        title="Motion Community API",
+        default_version="v1",
+    ),
     public=True,
     permission_classes=(permissions.AllowAny,),
 )
 
-urlpatterns = i18n_patterns (
-    path('admin/', admin.site.urls),
-    path('', include ('motion_app.urls')),
-    path('docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+urlpatterns = i18n_patterns(
+    path("admin/", admin.site.urls),
+    path("api/", include("motion_app.urls")),  # Все API начинаются с /api/
+    path("docs/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
 ) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
