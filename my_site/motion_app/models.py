@@ -16,17 +16,19 @@ RoleChoices = (
 
 
 class UserProfile(AbstractUser):
-    email = models.EmailField('Почта', unique=True)
+    email = models.EmailField(unique=True)
+    phone_number = PhoneNumberField(null=True, blank=True)
+    position = models.CharField(max_length=100, blank=True)
+    bio = models.TextField(blank=True)
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    cv_file = models.FileField(upload_to='cv/', blank=True, null=True)
+    user_role = models.CharField(max_length=20, choices=RoleChoices, default='Developer')
+
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
-    position = models.CharField('Должность', max_length=150, blank=True)
-    bio = models.TextField('О себе', blank=True)
-    avatar = models.ImageField('Аватар', upload_to='avatars/', blank=True, null=True)
-    cv_file = models.FileField('Резюме', upload_to='cv/', blank=True, null=True)
-    user_role = models.CharField('Роль', max_length=20, choices=RoleChoices, default='Developer')
 
     def __str__(self):
-        return self.get_full_name() or self.email
+        return self.email
 
 
 class Member_Profile(models.Model):
@@ -117,7 +119,7 @@ class ClientRequest(models.Model):
     title = models.CharField(max_length=150)
     description = models.TextField()
     project_type = models.CharField(max_length=150)
-    budget = models.PositiveIntegerField()
+    budget = models.PositiveIntegerField(null=True, blank=True)
     Client_Status = (
         ('New', 'New'),
         ('Reviewing', 'Reviewing'),
@@ -129,4 +131,5 @@ class ClientRequest(models.Model):
 
     def __str__(self):
         return f'{self.name} - {self.title}'
+
 
