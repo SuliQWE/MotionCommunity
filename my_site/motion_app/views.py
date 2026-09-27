@@ -4,11 +4,12 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.exceptions import PermissionDenied
-from .models import UserProfile, MemberProfile, Team, TeamMember, Project, ProjectMember, ClientRequest
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+
+from .models import UserProfile, Team, TeamMember, Project, ProjectMember, ClientRequest, MemberRoleChoices, RoleChoices
 from .permission import (
-    IsAdmin, IsTeamLead, IsOwnerProfileOrReadOnly,
+    IsAdmin, IsOwnerProfileOrReadOnly,
     IsAdminOrProjectTeamLead, IsAdminOrOwnTeamLead, IsAdminOrOwnProjectTeamLead,
 )
 from .serializers import (
@@ -16,8 +17,8 @@ from .serializers import (
     MemberProfileListSerializer, MemberProfileDetailSerializer,
     TeamListSerializer, TeamDetailSerializer, TeamMemberSerializer,
     ProjectListSerializer, ProjectDetailSerializer, ProjectMemberSerializer,
-    ClientRequestListSerializer, ClientRequestDetailSerializer,
-    LoginSerializer
+    ClientRequestListSerializer, ClientRequestDetailSerializer, ClientRequestCreateSerializer,
+    LoginSerializer,
 )
 
 
@@ -43,7 +44,7 @@ class LogoutView(generics.GenericAPIView):
             token.blacklist()
             return Response(status=status.HTTP_205_RESET_CONTENT)
         except Exception:
-            return Response({"detail": "Неверный refresh token"},status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Неверный refresh token"}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):
@@ -57,18 +58,17 @@ class UserProfileViewSet(viewsets.ModelViewSet):
         return UserProfileDetailSerializer
 
 
-
 class MemberProfileListAPIView(generics.ListAPIView):
-    queryset = MemberProfile.objects.all()
+    queryset = UserProfile.objects.exclude(role=RoleChoices.ADMIN)
     serializer_class = MemberProfileListSerializer
     permission_classes = [AllowAny]
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_fields = ["position", "skills"]
-    search_fields = ["firstName", "lastName"]
+    filterset_fields = ["position"]
+    search_fields = ["first_name", "last_name", "skills"]
 
 
 class MemberProfileDetailAPIView(generics.RetrieveUpdateAPIView):
-    queryset = MemberProfile.objects.all()
+    queryset = UserProfile.objects.exclude(role=RoleChoices.ADMIN)
     serializer_class = MemberProfileDetailSerializer
     http_method_names = ['get', 'patch']
     permission_classes = [IsOwnerProfileOrReadOnly]
@@ -81,21 +81,20 @@ class TeamViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return [IsAuthenticated()]
-
         return [IsAdmin()]
 
     def get_serializer_class(self):
         if self.action == 'list':
             return TeamListSerializer
-
         return TeamDetailSerializer
 
 
-
-class TeamMemberViewSet(mixins.ListModelMixin,
-                         mixins.CreateModelMixin,
-                         mixins.DestroyModelMixin,
-                         viewsets.GenericViewSet):
+class TeamMemberViewSet(
+    mixins.ListModelMixin,
+    mixins.CreateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     serializer_class = TeamMemberSerializer
     permission_classes = [IsAdminOrOwnTeamLead]
     lookup_field = 'user_id'
@@ -105,7 +104,7 @@ class TeamMemberViewSet(mixins.ListModelMixin,
         return TeamMember.objects.filter(team_id=self.kwargs['teamId'])
 
     def perform_create(self, serializer):
-        if serializer.validated_data.get('role') == 'Team_Lead' and self.request.user.user_role != 'Admin':
+        if serializer.validated_data.get('role') == MemberRoleChoices.TEAM_LEAD and self.request.user.role != RoleChoices.ADMIN:
             raise PermissionDenied('Назначать Team Lead может только Admin')
         serializer.save(team_id=self.kwargs['teamId'])
 
@@ -118,6 +117,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
     ordering_fields = ["created_at"]
     ordering = ["-created_at"]
     http_method_names = ["get", "post", "patch", "delete"]
+
     def get_permissions(self):
         if self.action in ('list', 'retrieve'):
             return [AllowAny()]
@@ -129,6 +129,7 @@ class ProjectViewSet(viewsets.ModelViewSet):
         if self.action == 'list':
             return ProjectListSerializer
         return ProjectDetailSerializer
+
 
 class ProjectMemberViewSet(
     mixins.ListModelMixin,
@@ -142,19 +143,14 @@ class ProjectMemberViewSet(
     lookup_url_kwarg = 'userId'
 
     def get_queryset(self):
-        return ProjectMember.objects.filter(
-            project_id=self.kwargs['projectId']
-        )
+        return ProjectMember.objects.filter(project_id=self.kwargs['projectId'])
 
     def perform_create(self, serializer):
         role = serializer.validated_data.get('role')
-
-        if role == 'Team_Lead' and self.request.user.role != 'Admin':
+        if role == MemberRoleChoices.TEAM_LEAD and self.request.user.role != RoleChoices.ADMIN:
             raise PermissionDenied('Назначать Team Lead может только Admin')
+        serializer.save(project_id=self.kwargs['projectId'])
 
-        serializer.save(
-            project_id=self.kwargs['projectId']
-        )
 
 class ClientRequestListCreateAPIView(generics.ListCreateAPIView):
     queryset = ClientRequest.objects.all()
@@ -166,8 +162,9 @@ class ClientRequestListCreateAPIView(generics.ListCreateAPIView):
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
-            return ClientRequestDetailSerializer
+            return ClientRequestCreateSerializer   # status клиентке ачылбайт
         return ClientRequestListSerializer
+
 
 class ClientRequestDetailAPIView(generics.RetrieveUpdateAPIView):
     queryset = ClientRequest.objects.all()

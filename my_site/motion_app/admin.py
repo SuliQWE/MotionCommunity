@@ -1,10 +1,10 @@
 from django.contrib import admin
-from .models import UserProfile, MemberProfile, Team, TeamMember, ProjectMember, Project, ClientRequest
+from .models import UserProfile, Team, TeamMember, ProjectMember, Project, ClientRequest
 from modeltranslation.admin import TranslationAdmin
 
 
-@admin.register(MemberProfile)
-class MemberProfileAdmin(TranslationAdmin):
+@admin.register(UserProfile)
+class UserProfileAdmin(TranslationAdmin):
 
     class Media:
         js = (
@@ -55,7 +55,5 @@ class ClientRequestsAdmin(TranslationAdmin):
             'screen': ('modeltranslation/css/tabbed_translation_fields.css',),
         }
 
-
-admin.site.register(UserProfile)
 admin.site.register(TeamMember)
 admin.site.register(ProjectMember)
