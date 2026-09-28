@@ -3,21 +3,18 @@ from django.contrib.auth.models import AbstractUser
 from phonenumber_field.modelfields import PhoneNumberField
 
 
-StatusChoices = (
-    ('Active', 'Active'),
-    ('Inactive', 'Inactive'),
-)
+class RoleChoices(models.TextChoices):
+    ADMIN = 'Admin', 'Администратор'
+    TEAM_LEAD = 'Team_Lead', 'Тим Лид'
+    DEVELOPER = 'Developer', 'Разработчик'
 
-RoleChoices = (
-    ('Admin', 'Администратор'),
-    ('Team_Lead', 'Тим Лид'),
-    ('Developer', 'Разработчик'),
-)
+class MemberRoleChoices(models.TextChoices):
+    TEAM_LEAD = 'Team_Lead', 'Тим Лид'
+    DEVELOPER = 'Developer', 'Разработчик'
 
-MemberRoleChoices = (
-    ('Team_Lead', 'Тим Лид'),
-    ('Developer', 'Разработчик'),
-)
+class StatusChoices(models.TextChoices):
+    ACTIVE = 'Active', 'Active'
+    INACTIVE = 'Inactive', 'Inactive'
 
 class UserProfile(AbstractUser):
     avatar = models.ImageField('Аватар участника', upload_to='members_image/', blank=True, null=True)
@@ -38,8 +35,8 @@ class UserProfile(AbstractUser):
     linkedin = models.URLField('Линкедин', blank=True, null=True)
     portfolio = models.URLField('Портфолио', blank=True, null=True)
     resume = models.FileField('Резюме', upload_to='resume/', blank=True, null=True)
-    role = models.CharField(max_length=150, choices=RoleChoices, default='Developer')
-    status = models.CharField(max_length=150, choices=StatusChoices, default='Inactive')
+    role = models.CharField(max_length=150, choices=RoleChoices.choices, default=RoleChoices.DEVELOPER)
+    status = models.CharField(max_length=150, choices=StatusChoices.choices, default=StatusChoices.INACTIVE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -61,7 +58,7 @@ class Team(models.Model):
 class TeamMember(models.Model):
     team = models.ForeignKey(Team, on_delete=models.CASCADE, related_name='members')
     user = models.ForeignKey(UserProfile, on_delete=models.PROTECT, related_name='team_memberships')
-    role = models.CharField(max_length=20, choices=MemberRoleChoices, default='Developer')
+    role = models.CharField(max_length=20, choices=MemberRoleChoices.choices, default=MemberRoleChoices.DEVELOPER)
 
     class Meta:
         unique_together = ('team', 'user')  # запрет дублей
@@ -94,7 +91,7 @@ class Project(models.Model):
 class ProjectMember(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='members')
     user = models.ForeignKey(UserProfile, on_delete=models.PROTECT, related_name='project_memberships')
-    role = models.CharField(max_length=20, choices=MemberRoleChoices, default='Developer')
+    role = models.CharField(max_length=20, choices=MemberRoleChoices.choices, default=MemberRoleChoices.DEVELOPER)
 
     class Meta:
         unique_together = ('project', 'user')  # запрет дублей

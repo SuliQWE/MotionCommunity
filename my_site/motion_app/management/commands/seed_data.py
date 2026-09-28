@@ -1,114 +1,113 @@
 """
-Заполняет базу тестовыми данными: 1 Admin, 2 Team Lead, 12 Developer,
-5 команд, 5 проектов. Переводимые поля (bio, descriptions, description)
-заполняются сразу на русском и английском через modeltranslation.
+Полностью очищает БД (кроме структуры таблиц) и заполняет тестовыми данными:
+1 Admin, 2 Team Lead, 10 Developer, 5 команд, 5 проектов, 3 заявки клиентов.
 
 Использование:
     python manage.py seed_data
-Повторный запуск безопасен — всё делается через get_or_create.
+Каждый запуск ПОЛНОСТЬЮ пересоздаёт данные (сначала delete, потом create).
 """
 
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
 from motion_app.models import (
-    UserProfile, Member_Profile, Team, TeamMember, Project, ProjectMember,
+    UserProfile, Team, TeamMember, Project, ProjectMember, ClientRequest,
+    RoleChoices, MemberRoleChoices, StatusChoices,
 )
 
 
 class Command(BaseCommand):
-    help = 'Заполняет БД тестовыми пользователями, командами и проектами (RU/EN)'
+    help = 'Очищает БД и заполняет тестовыми пользователями, командами, проектами и заявками'
 
     @transaction.atomic
     def handle(self, *args, **options):
+        self.clear_all()
+
         admin = self.create_admin()
         leads = self.create_team_leads()
         developers = self.create_developers()
         teams = self.create_teams()
         projects = self.create_projects()
-
         self.distribute(leads, developers, teams, projects)
+        self.create_client_requests()
 
         self.stdout.write(self.style.SUCCESS(
             f'Готово: 1 admin, {len(leads)} team lead, {len(developers)} developer, '
             f'{len(teams)} команд, {len(projects)} проектов.'
         ))
 
+    # ---------- очистка ----------
+
+    def clear_all(self):
+        ClientRequest.objects.all().delete()
+        ProjectMember.objects.all().delete()
+        TeamMember.objects.all().delete()
+        Project.objects.all().delete()
+        Team.objects.all().delete()
+        UserProfile.objects.all().delete()
+        self.stdout.write(self.style.WARNING('БД очищена.'))
+
     # ---------- Users ----------
 
     def create_admin(self):
-        user, created = UserProfile.objects.get_or_create(
+        user = UserProfile.objects.create_superuser(
+            username='admin',
             email='admin@motion.community',
-            defaults=dict(
-                username='admin',
-                position='Platform Administrator',
-                user_role='Admin',
-                is_staff=True,
-                is_superuser=True,
-            ),
+            password='Admin12345!',
         )
-        if created:
-            user.set_password('Admin12345!')
-            user.save()
+        user.role = RoleChoices.ADMIN
+        user.status = StatusChoices.ACTIVE
+        user.first_name = 'Admin'
+        user.save()
         return user
 
     def create_team_leads(self):
         data = [
-            ('lead1@motion.community', 'nurlan.lead', 'Нурлан', 'Асанов', 'Fullstack_Developer'),
-            ('lead2@motion.community', 'aigerim.lead', 'Айгерим', 'Токтогулова', 'Backend_Developer'),
+            ('lead1', 'Нурлан', 'Асанов', 'Fullstack_Developer'),
+            ('lead2', 'Айгерим', 'Токтогулова', 'Backend_Developer'),
         ]
         leads = []
-        for email, username, first, last, position in data:
-            user, created = UserProfile.objects.get_or_create(
-                email=email,
-                defaults=dict(username=username, position='Team Lead', user_role='Team_Lead'),
+        for username, first, last, position in data:
+            user = UserProfile.objects.create_user(
+                username=username,
+                email=f'{username}@motion.community',
+                password='TeamLead12345!',
+                first_name=first,
+                last_name=last,
+                position=position,
+                role=RoleChoices.TEAM_LEAD,
+                status=StatusChoices.ACTIVE,
+                bio=f'{first} {last} — тимлид в Motion Community, ведёт несколько проектов одновременно.',
             )
-            if created:
-                user.set_password('TeamLead12345!')
-                user.save()
-
-            profile, _ = Member_Profile.objects.get_or_create(
-                member_users=user,
-                defaults=dict(firstName=first, lastName=last, position=position, status='Active'),
-            )
-            self.set_bio(profile,
-                ru=f'{first} {last} — тимлид в Motion Community, ведёт несколько проектов одновременно.',
-                en=f'{first} {last} is a team lead at Motion Community, running several projects at once.')
             leads.append(user)
         return leads
 
     def create_developers(self):
         data = [
-            ('dev1@motion.community', 'dev1', 'Азамат', 'Кубанычбеков', 'Frontend_Developer'),
-            ('dev2@motion.community', 'dev2', 'Диана', 'Осмонова', 'Frontend_Developer'),
-            ('dev3@motion.community', 'dev3', 'Тимур', 'Жумабеков', 'Backend_Developer'),
-            ('dev4@motion.community', 'dev4', 'Камила', 'Сыдыкова', 'Backend_Developer'),
-            ('dev5@motion.community', 'dev5', 'Эрлан', 'Абдразаков', 'Fullstack_Developer'),
-            ('dev6@motion.community', 'dev6', 'Жаннат', 'Мамытова', 'Fullstack_Developer'),
-            ('dev7@motion.community', 'dev7', 'Бекзат', 'Орозалиев', 'UI/UX_Designer'),
-            ('dev8@motion.community', 'dev8', 'Мээрим', 'Курманбекова', 'UI/UX_Designer'),
-            ('dev9@motion.community', 'dev9', 'Данияр', 'Сатыбалдиев', 'QA_Engineer'),
-            ('dev10@motion.community', 'dev10', 'Нургуль', 'Бекова', 'QA_Engineer'),
-            ('dev11@motion.community', 'dev11', 'Руслан', 'Табылдиев', 'Mobile_Developer'),
-            ('dev12@motion.community', 'dev12', 'Салтанат', 'Ибраимова', 'Mobile_Developer'),
+            ('dev1', 'Азамат', 'Кубанычбеков', 'Frontend_Developer'),
+            ('dev2', 'Диана', 'Осмонова', 'Frontend_Developer'),
+            ('dev3', 'Тимур', 'Жумабеков', 'Backend_Developer'),
+            ('dev4', 'Камила', 'Сыдыкова', 'Backend_Developer'),
+            ('dev5', 'Эрлан', 'Абдразаков', 'Fullstack_Developer'),
+            ('dev6', 'Жаннат', 'Мамытова', 'Fullstack_Developer'),
+            ('dev7', 'Бекзат', 'Орозалиев', 'UI/UX_Designer'),
+            ('dev8', 'Мээрим', 'Курманбекова', 'UI/UX_Designer'),
+            ('dev9', 'Данияр', 'Сатыбалдиев', 'QA_Engineer'),
+            ('dev10', 'Нургуль', 'Бекова', 'Mobile_Developer'),
         ]
         developers = []
-        for email, username, first, last, position in data:
-            user, created = UserProfile.objects.get_or_create(
-                email=email,
-                defaults=dict(username=username, position=position.replace('_', ' '), user_role='Developer'),
+        for username, first, last, position in data:
+            user = UserProfile.objects.create_user(
+                username=username,
+                email=f'{username}@motion.community',
+                password='Developer12345!',
+                first_name=first,
+                last_name=last,
+                position=position,
+                role=RoleChoices.DEVELOPER,
+                status=StatusChoices.ACTIVE,
+                bio=f'{first} {last} — участник Motion Community, специализация: {position.replace("_", " ")}.',
             )
-            if created:
-                user.set_password('Developer12345!')
-                user.save()
-
-            profile, _ = Member_Profile.objects.get_or_create(
-                member_users=user,
-                defaults=dict(firstName=first, lastName=last, position=position, status='Active'),
-            )
-            self.set_bio(profile,
-                ru=f'{first} {last} — участник Motion Community, специализация: {profile.get_position_display()}.',
-                en=f'{first} {last} is a Motion Community member specializing in {position.replace("_", " ")}.')
             developers.append(user)
         return developers
 
@@ -116,79 +115,64 @@ class Command(BaseCommand):
 
     def create_teams(self):
         data = [
-            ('Alpha Team', 'Команда, работающая над образовательными продуктами.',
-                           'Team building educational products.'),
-            ('Beta Team', 'Команда, отвечающая за клиентские веб-приложения.',
-                          'Team responsible for client-facing web applications.'),
-            ('Gamma Team', 'Команда мобильной разработки.',
-                           'Mobile development team.'),
-            ('Delta Team', 'Команда аналитики и внутренних инструментов.',
-                           'Analytics and internal tools team.'),
-            ('Omega Team', 'Команда, работающая над маркетплейс-проектами.',
-                           'Team working on marketplace projects.'),
+            ('Alpha Team', 'Команда, работающая над образовательными продуктами.'),
+            ('Beta Team', 'Команда, отвечающая за клиентские веб-приложения.'),
+            ('Gamma Team', 'Команда мобильной разработки.'),
+            ('Delta Team', 'Команда аналитики и внутренних инструментов.'),
+            ('Omega Team', 'Команда, работающая над маркетплейс-проектами.'),
         ]
-        teams = []
-        for name, ru, en in data:
-            team, _ = Team.objects.get_or_create(team_name=name)
-            team.descriptions_ru = ru
-            team.descriptions_en = en
-            team.save()
-            teams.append(team)
-        return teams
+        return [Team.objects.create(team_name=name, description=desc) for name, desc in data]
 
     # ---------- Projects ----------
 
     def create_projects(self):
         data = [
             ('Motion LMS Platform', 'Planned', 'Education',
-                'Платформа для онлайн-обучения студентов Motion с курсами и тестами.',
-                'Online learning platform for Motion students with courses and quizzes.'),
+                'Платформа для онлайн-обучения студентов Motion с курсами и тестами.'),
             ('Motion Community Portal', 'In_progress', 'Web',
-                'Портал сообщества с профилями участников и проектами.',
-                'Community portal with member profiles and project showcase.'),
+                'Портал сообщества с профилями участников и проектами.'),
             ('Motion Mobile Companion', 'In_progress', 'Mobile',
-                'Мобильное приложение-компаньон для участников Motion.',
-                'Mobile companion app for Motion members.'),
+                'Мобильное приложение-компаньон для участников Motion.'),
             ('Motion Analytics Dashboard', 'Completed', 'Analytics',
-                'Дашборд аналитики успеваемости и активности студентов.',
-                'Analytics dashboard for student progress and activity.'),
+                'Дашборд аналитики успеваемости и активности студентов.'),
             ('Motion Marketplace', 'Paused', 'E-commerce',
-                'Маркетплейс для продажи цифровых продуктов выпускников.',
-                'Marketplace for selling graduates’ digital products.'),
+                'Маркетплейс для продажи цифровых продуктов выпускников.'),
         ]
-        projects = []
-        for name, status, category, ru, en in data:
-            project, _ = Project.objects.get_or_create(
-                name=name,
-                defaults=dict(project_status=status, category=category, description=ru),
-            )
-            project.description_ru = ru
-            project.description_en = en
-            project.save()
-            projects.append(project)
-        return projects
+        return [
+            Project.objects.create(name=name, project_status=status, category=category, description=desc)
+            for name, status, category, desc in data
+        ]
 
     # ---------- Распределение по командам/проектам ----------
 
     def distribute(self, leads, developers, teams, projects):
-        # каждому проекту/команде — свой лид (по кругу из 2 лидов) и по 2-3 разработчика
-        chunks = [developers[i::5] for i in range(5)]  # делим 12 разработчиков на 5 групп
+        chunks = [developers[i::5] for i in range(5)]  # 10 разработчиков на 5 групп
 
         for i, (team, project) in enumerate(zip(teams, projects)):
             lead = leads[i % len(leads)]
             group = chunks[i]
 
-            TeamMember.objects.get_or_create(team=team, user=lead, defaults=dict(role='Team_Lead'))
-            ProjectMember.objects.get_or_create(project=project, user=lead, defaults=dict(role='Team_Lead'))
+            TeamMember.objects.create(team=team, user=lead, role=MemberRoleChoices.TEAM_LEAD)
+            ProjectMember.objects.create(project=project, user=lead, role=MemberRoleChoices.TEAM_LEAD)
 
             for dev in group:
-                TeamMember.objects.get_or_create(team=team, user=dev, defaults=dict(role='Developer'))
-                ProjectMember.objects.get_or_create(project=project, user=dev, defaults=dict(role='Developer'))
+                TeamMember.objects.create(team=team, user=dev, role=MemberRoleChoices.DEVELOPER)
+                ProjectMember.objects.create(project=project, user=dev, role=MemberRoleChoices.DEVELOPER)
 
-    # ---------- helpers ----------
+    # ---------- Client requests ----------
 
-    @staticmethod
-    def set_bio(profile, ru, en):
-        profile.bio_ru = ru
-        profile.bio_en = en
-        profile.save()
+    def create_client_requests(self):
+        data = [
+            ('Марат Осмонов', 'ТОО Финтех', 'marat@fintech.kg', '+996700123456',
+             'Нужен CRM для отдела продаж', 'CRM', 500000),
+            ('Айнура Дуйшеева', 'EduTech LLC', 'ainura@edutech.kg', '+996555987654',
+             'Платформа для онлайн-курсов', 'LMS', 800000),
+            ('Бакыт Жумалиев', 'ShopKG', 'bakyt@shopkg.kg', '+996700555222',
+             'Интернет-магазин с доставкой', 'E-commerce', 350000),
+        ]
+        for name, company, email, phone, title, ptype, budget in data:
+            ClientRequest.objects.create(
+                name=name, company=company, email=email, phone=phone,
+                title=title, description=f'{title} — подробности обсудим на созвоне.',
+                project_type=ptype, budget=budget,
+            )

@@ -18,6 +18,6 @@ schema_view = get_schema_view(
 
 urlpatterns = i18n_patterns(
     path("admin/", admin.site.urls),
-    path("api/", include("motion_app.urls")),  # Все API начинаются с /api/
+    path("", include("motion_app.urls")),
     path("docs/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
 ) + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

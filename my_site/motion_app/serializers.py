@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db import IntegrityError
-from .models import UserProfile, Team, TeamMember, Project, ProjectMember, ClientRequest
+from .models import (
+    UserProfile, Team, TeamMember, Project, ProjectMember, ClientRequest,
+    RoleChoices, StatusChoices,
+)
 
 
 class LoginSerializer(TokenObtainPairSerializer):
@@ -24,8 +27,25 @@ class UserProfileListSerializer(serializers.ModelSerializer):
         fields = ('id', 'login', 'role', 'status')
 
 
-class UserProfileDetailSerializer(serializers.ModelSerializer):
+class UserProfileCreateSerializer(serializers.ModelSerializer):
     login = serializers.CharField(source='username')
+    password = serializers.CharField(write_only=True)
+    role = serializers.ChoiceField(choices=RoleChoices.choices, required=False, default=RoleChoices.DEVELOPER)
+
+    class Meta:
+        model = UserProfile
+        fields = ('id', 'login', 'password', 'role')
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        user = UserProfile.objects.create_user(status=StatusChoices.INACTIVE, **validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+
+
+class UserProfileDetailSerializer(serializers.ModelSerializer):
+    login = serializers.CharField(source='username', required=False)
     password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
@@ -35,6 +55,20 @@ class UserProfileDetailSerializer(serializers.ModelSerializer):
             'first_name', 'last_name', 'avatar', 'bio', 'position',
             'skills', 'github', 'linkedin', 'portfolio', 'resume',
         )
+        read_only_fields = ('status',)
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        if instance.status == StatusChoices.INACTIVE and (
+            validated_data.get('first_name') or validated_data.get('bio') or validated_data.get('skills')
+        ):
+            instance.status = StatusChoices.ACTIVE
+        instance.save()
+        return instance
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)

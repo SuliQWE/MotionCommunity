@@ -1,19 +1,23 @@
 from rest_framework import viewsets, generics, mixins, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from .models import UserProfile, Team, TeamMember, Project, ProjectMember, ClientRequest, MemberRoleChoices, RoleChoices
+from .models import (
+    UserProfile, Team, TeamMember, Project, ProjectMember, ClientRequest,
+    MemberRoleChoices, RoleChoices, StatusChoices,
+)
 from .permission import (
     IsAdmin, IsOwnerProfileOrReadOnly,
     IsAdminOrProjectTeamLead, IsAdminOrOwnTeamLead, IsAdminOrOwnProjectTeamLead,
 )
 from .serializers import (
-    UserProfileListSerializer, UserProfileDetailSerializer,
+    UserProfileListSerializer, UserProfileCreateSerializer, UserProfileDetailSerializer,
     MemberProfileListSerializer, MemberProfileDetailSerializer,
     TeamListSerializer, TeamDetailSerializer, TeamMemberSerializer,
     ProjectListSerializer, ProjectDetailSerializer, ProjectMemberSerializer,
@@ -21,6 +25,17 @@ from .serializers import (
     LoginSerializer,
 )
 
+
+class CommunityStatsView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        return Response({
+            'members_count': UserProfile.objects.exclude(role=RoleChoices.ADMIN)
+                .filter(status=StatusChoices.ACTIVE).count(),
+            'projects_count': Project.objects.count(),
+            'companies_count': ClientRequest.objects.values('company').distinct().count(),
+        })
 
 class CustomLoginView(TokenObtainPairView):
     serializer_class = LoginSerializer
@@ -55,6 +70,8 @@ class UserProfileViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.action == 'list':
             return UserProfileListSerializer
+        if self.action == 'create':
+            return UserProfileCreateSerializer
         return UserProfileDetailSerializer
 
 
