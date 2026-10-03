@@ -207,3 +207,71 @@ class ClientRequestDetailSerializer(serializers.ModelSerializer):
             'id', 'name', 'company', 'email', 'phone', 'title', 'description',
             'project_type', 'budget', 'status', 'created_at',
         )
+
+
+class WorkExperienceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkExperience
+        fields = (
+            'id', 'company', 'position', 'start_time', 'end_time',
+            'working_format', 'achievements'
+        )
+
+
+class EducationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Education
+        fields = (
+            'id', 'educational_institution', 'specialization', 'start_year',
+            'end_year', 'studying_now', 'responsibilities'
+        )
+
+
+class LanguagesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Languages
+        fields = (
+            'id', 'Level', 'languages'
+        )
+
+
+class CertificatesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Certificates
+        fields = (
+            'id', 'title', 'organization', 'given_date', 'text',
+            'certificate_image'
+        )
+
+class UserProfileNameSerializer(serializers.ModelSerializer):
+    login = serializers.CharField(source='username', required=False)
+    password = serializers.CharField(write_only=True, required=False)
+    work_user = WorkExperienceSerializer(many=True, read_only=True)
+    education_user = EducationSerializer(many=True, read_only=True)
+    language_user = LanguagesSerializer(many=True, read_only=True)
+    certificate_user = CertificatesSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = UserProfile
+        fields = (
+            'id', 'login', 'password', 'role', 'status', 'created_at',
+            'first_name', 'last_name', 'avatar', 'bio', 'position',
+            'skills', 'github', 'linkedin', 'portfolio', 'resume',
+            'work_user', 'education_user', 'language_user', 'certificate_user'
+        )
+        read_only_fields = ('status',)
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        if password:
+            instance.set_password(password)
+
+        instance.save()
+
+        return instance
+
+
