@@ -5,13 +5,18 @@ services:
   web:
     build: .
     command: >
-      bash -c "./manage.py collectstatic --noinput && ./manage.py makemigrations && ./manage.py migrate && gunicorn -b 0.0.0.0:8000 my_site.wsgi:application"
+      bash -c "./manage.py collectstatic --noinput &&
+      ./manage.py migrate &&
+      gunicorn -b 0.0.0.0:8000 my_site.wsgi:application"
+    env_file:
+      - .env
     volumes:
-      - .:/app
+      - ./db.sqlite3:/app/db.sqlite3
       - static_volume:/app/staticfiles
       - media_volume:/app/media
     ports:
       - "8000:8000"
+    restart: unless-stopped
 
   nginx:
     build: ./nginx
@@ -22,6 +27,7 @@ services:
       - media_volume:/app/media
     depends_on:
       - web
+    restart: unless-stopped
 
 volumes:
   static_volume:

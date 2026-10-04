@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     "django_filters",
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -150,3 +151,10 @@ REST_FRAMEWORK = {
 }
 
 AUTH_USER_MODEL = 'motion_app.UserProfile'
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://localhost:5173",
+]
+
+CORS_ALLOW_CREDENTIALS = True
