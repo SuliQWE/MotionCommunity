@@ -10,7 +10,8 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 
 from .models import (
     UserProfile, Team, TeamMember, Project, ProjectMember, ClientRequest,
-    MemberRoleChoices, RoleChoices, StatusChoices,
+    MemberRoleChoices, RoleChoices, StatusChoices, WorkExperience, Education, Languages,
+    Certificates
 )
 from .permission import (
     IsAdmin, IsOwnerProfileOrReadOnly,
@@ -22,7 +23,8 @@ from .serializers import (
     TeamListSerializer, TeamDetailSerializer, TeamMemberSerializer,
     ProjectListSerializer, ProjectDetailSerializer, ProjectMemberSerializer,
     ClientRequestListSerializer, ClientRequestDetailSerializer, ClientRequestCreateSerializer,
-    LoginSerializer,
+    LoginSerializer, UserProfileNameSerializer, WorkExperienceSerializer, EducationSerializer,
+    LanguagesSerializer, CertificatesSerializer
 )
 
 
@@ -188,3 +190,58 @@ class ClientRequestDetailAPIView(generics.RetrieveUpdateAPIView):
     serializer_class = ClientRequestDetailSerializer
     permission_classes = [IsAdmin]
     http_method_names = ['get', 'patch']
+
+
+class UserProfileNameAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = UserProfile.objects.all()
+    serializer_class = UserProfileNameSerializer
+    permission_classes = [AllowAny]
+    http_method_names = ['get', 'patch', 'delete']
+
+    def get_object(self):
+        return self.request.user
+
+
+
+class WorkExperienceAPIView(viewsets.ModelViewSet):
+    serializer_class = WorkExperienceSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return WorkExperience.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class EducationAPIView(viewsets.ModelViewSet):
+    serializer_class = EducationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Education.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class LanguagesAPIView(viewsets.ModelViewSet):
+    serializer_class = LanguagesSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Languages.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class CertificateAPIView(viewsets.ModelViewSet):
+    serializer_class = CertificatesSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Certificates.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

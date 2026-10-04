@@ -3,7 +3,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db import IntegrityError
 from .models import (
     UserProfile, Team, TeamMember, Project, ProjectMember, ClientRequest,
-    RoleChoices, StatusChoices,
+    RoleChoices, StatusChoices, WorkExperience, Education, Languages, Certificates
 )
 
 

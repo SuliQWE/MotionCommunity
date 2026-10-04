@@ -9,12 +9,17 @@ from .views import (
     MemberProfileListAPIView, MemberProfileDetailAPIView,
     TeamViewSet, TeamMemberViewSet,
     ProjectViewSet, ProjectMemberViewSet,
-    ClientRequestListCreateAPIView, ClientRequestDetailAPIView,
+    ClientRequestListCreateAPIView, ClientRequestDetailAPIView, UserProfileNameAPIView,
+    WorkExperienceAPIView, EducationAPIView, LanguagesAPIView, CertificateAPIView,
 )
 router = routers.SimpleRouter()
 router.register(r'admin/members', UserProfileViewSet, basename='admin-members')
 router.register(r'teams', TeamViewSet, basename='teams')
 router.register(r'projects', ProjectViewSet, basename='projects')
+router.register(r'personal-account/work', WorkExperienceAPIView, basename='work')
+router.register(r'personal-account/education', EducationAPIView, basename='education')
+router.register(r'personal-account/languages', LanguagesAPIView, basename='languages')
+router.register(r'personal-account/certificates', CertificateAPIView, basename='certificates')
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -36,4 +41,6 @@ urlpatterns = [
 
     path('client-requests/', ClientRequestListCreateAPIView.as_view()),
     path('client-requests/<int:pk>/', ClientRequestDetailAPIView.as_view()),
+
+    path('personal-account/', UserProfileNameAPIView.as_view())
 ]

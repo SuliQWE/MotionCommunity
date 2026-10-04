@@ -16,6 +16,7 @@ class StatusChoices(models.TextChoices):
     ACTIVE = 'Active', 'Active'
     INACTIVE = 'Inactive', 'Inactive'
 
+
 class UserProfile(AbstractUser):
     avatar = models.ImageField('Аватар участника', upload_to='members_image/', blank=True, null=True)
     bio = models.TextField(blank=True)
@@ -121,4 +122,58 @@ class ClientRequest(models.Model):
     def __str__(self):
         return f'{self.name} - {self.title}'
 
+
+
+class WorkExperience(models.Model):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='work_user')
+    company = models.CharField(max_length=150)
+    position = models.CharField(max_length=150)
+    start_time = models.DateField()
+    end_time = models.DateField(null=True, blank=True)
+    WorkingChoices = (
+        ('office', 'В офисе'),
+        ('remote', 'Удалённо'),
+        ('hybrid', 'Гибрид'),
+        ('freelance', 'Фриланс'),
+        ('part_time', 'Неполный рабочий день'),
+        ('full_time', 'Полный рабочий день'),
+        ('contract', 'По контракту'),
+        ('internship', 'Стажировка'),
+        ('flexible', 'Гибкий график'),
+    )
+    working_format = models.CharField(max_length=150, choices=WorkingChoices, default='office')
+    achievements = models.TextField()
+
+class Education(models.Model):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='education_user')
+    educational_institution = models.CharField(max_length=150)
+    specialization = models.CharField(max_length=150)
+    start_year = models.DateField()
+    end_year = models.DateField(null=True, blank=True)
+    studying_now = models.BooleanField()
+    responsibilities = models.TextField()
+
+
+class Languages(models.Model):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='language_user')
+    Languages_Choices = (
+        ('A1', 'Начальный'),
+        ('A2', 'Базовый'),
+        ('B1', 'Средний'),
+        ('B2', 'Выше среднего'),
+        ('C1', 'Продвинутый'),
+        ('C2', 'Свободный'),
+        ('Родной язык', 'Родной язык'),
+    )
+    Level = models.CharField(max_length=150, choices=Languages_Choices, default='A1')
+    languages = models.CharField(max_length=150)
+
+
+class Certificates(models.Model):
+    user = models.ForeignKey(UserProfile, on_delete=models.CASCADE, related_name='certificate_user')
+    title = models.CharField(max_length=150)
+    organization = models.CharField(max_length=150)
+    given_date = models.DateField()
+    text = models.TextField()
+    certificate_image = models.ImageField(upload_to='certificates/')
 
