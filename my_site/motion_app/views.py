@@ -7,6 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.exceptions import PermissionDenied
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework_simplejwt.authentication import JWTAuthentication
 
 from .models import (
     UserProfile, Team, TeamMember, Project, ProjectMember, ClientRequest,
@@ -62,6 +63,20 @@ class LogoutView(generics.GenericAPIView):
             return Response(status=status.HTTP_205_RESET_CONTENT)
         except Exception:
             return Response({"detail": "Неверный refresh token"}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class VerifyTokenView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        return Response({
+            'id': user.id,
+            'username': user.username,
+            'role': user.role,
+        })
+
 
 
 class UserProfileViewSet(viewsets.ModelViewSet):

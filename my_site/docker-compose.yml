@@ -1,5 +1,3 @@
-version: '3'
-
 services:
 
   web:
@@ -16,6 +14,8 @@ services:
       - media_volume:/app/media
     ports:
       - "8000:8000"
+    networks:
+      - motion_network
     restart: unless-stopped
 
   nginx:
@@ -27,8 +27,14 @@ services:
       - media_volume:/app/media
     depends_on:
       - web
+    networks:
+      - motion_network
     restart: unless-stopped
 
 volumes:
   static_volume:
   media_volume:
+
+networks:
+  motion_network:
+    name: motion_network

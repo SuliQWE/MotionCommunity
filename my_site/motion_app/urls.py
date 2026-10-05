@@ -5,7 +5,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     CommunityStatsView,
     CustomLoginView, LogoutView,
-    UserProfileViewSet,
+    UserProfileViewSet, VerifyTokenView,
     MemberProfileListAPIView, MemberProfileDetailAPIView,
     TeamViewSet, TeamMemberViewSet,
     ProjectViewSet, ProjectMemberViewSet,
@@ -29,6 +29,7 @@ urlpatterns = [
     path('auth/login/', CustomLoginView.as_view()),
     path('auth/login/refresh/', TokenRefreshView.as_view()),
     path('auth/logout/', LogoutView.as_view()),
+    path('auth/verify/', VerifyTokenView.as_view()),
 
     path('members/', MemberProfileListAPIView.as_view()),
     path('members/<int:pk>/', MemberProfileDetailAPIView.as_view()),
