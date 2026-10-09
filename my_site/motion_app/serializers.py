@@ -150,7 +150,7 @@ class TeamDetailSerializer(serializers.ModelSerializer):
 class ProjectListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Project
-        fields = ('id', 'name', 'project_status', 'category', 'preview_image')
+        fields = ('id', 'name', 'project_status', 'category', 'preview_image', 'team')
 
 
 class ProjectMemberSerializer(serializers.ModelSerializer):
@@ -175,7 +175,7 @@ class ProjectDetailSerializer(serializers.ModelSerializer):
         model = Project
         fields = (
             'id', 'name', 'description', 'project_status', 'category',
-            'preview_image', 'demo_url', 'github_url', 'created_at', 'members',
+            'preview_image', 'demo_url', 'github_url', 'created_at', 'member', 'members',
         )
 
     def get_members(self, obj):

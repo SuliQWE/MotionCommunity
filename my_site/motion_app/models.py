@@ -69,9 +69,9 @@ class TeamMember(models.Model):
 
 
 class Project(models.Model):
+    team = models.ForeignKey(Team, on_delete=models.PROTECT, related_name='projects', null=True, blank=True)
     name = models.CharField(max_length=150)
     description = models.TextField()
-
     ProjectStatus = (
         ('Planned', 'Planned'),
         ('In_progress', 'In progress'),
